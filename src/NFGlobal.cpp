@@ -16,17 +16,17 @@ int CreateThread(POSIX_THREAD_FUNC func, void *Param, pthread_t *thr_id, long pr
     int result;
     pthread_attr_t attr;
     if (::pthread_attr_init (&attr) != 0) {
-            return -1;
-        }
+        return -1;
+    }
 
     if (stacksize == 0) {
-            stacksize = NF_DEFAULT_STACK_SIZE;
-        }
+        stacksize = NF_DEFAULT_STACK_SIZE;
+    }
 
     if (::pthread_attr_setstacksize (&attr, stacksize) != 0) {
-            ::pthread_attr_destroy (&attr);
-            return -1;
-        }
+        ::pthread_attr_destroy (&attr);
+        return -1;
+    }
 
     result = ::pthread_create (thr_id, &attr, func, Param);
     ::pthread_attr_destroy (&attr);
@@ -45,7 +45,7 @@ int CheckAndMakeDirs(const char *pszDir, int *pret)
 
     p = strchr(pszDir, '/');
     while(p!=NULL) {
-        // 取到 '/'前的字符串
+        // 取到'/'前的字符串
         std::string dir(pszDir, p-pszDir);
         if(dir.size() > 0) {
             struct stat st;
@@ -58,7 +58,6 @@ int CheckAndMakeDirs(const char *pszDir, int *pret)
             }
         }
 
-        // //xxx/yyy/形式
         if((size_t)(p + 1 - pszDir) == sz) {
             return CODE_OK;
         }
@@ -66,7 +65,6 @@ int CheckAndMakeDirs(const char *pszDir, int *pret)
         p = strchr(p+1, '/');
     }
 
-    // /xxx/yyy形式
     std::string dir(pszDir, sz);
     if(dir.size() > 0) {
         struct stat st;
