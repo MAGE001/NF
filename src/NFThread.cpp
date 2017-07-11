@@ -42,6 +42,7 @@ int CNFThread::InitizlizeThread(int fd_count)
     if (m_EP == -1) {
         return CODE_ERROR_CREATE_EPOLL;
     }
+
     NEWARRAY(event_list, epoll_event, MAX_CONNECTIONS_PER_THREAD)
 
     std::string strfifo("../var/fifo_");
@@ -59,6 +60,7 @@ int CNFThread::InitizlizeThread(int fd_count)
     }
     AddFDToEpoll(m_R.fd, &m_R, EPOLLIN|EPOLLET);
 
+    // 创建worker线程
     if(CreateThread(CNFThread::Thread, this, &m_ThreadID, 0, 0) != 0) {
         MYLOG_ERROR(CNFMain::g_pLogger, "create thread failed, errno:%d.", errno);
         return CODE_ERROR_CREATE_THREAD;
@@ -100,6 +102,7 @@ int CNFThread::ModFDToEpoll(int fd, void *p, int flag)
     if(flag != 0) {
         ee.events = flag;
     } else {
+        // 目前总会走这个分支，第一次连接时会触发EPOLLOUT
         ee.events = EPOLLIN|m_Flag|EPOLLRDHUP;
     }
 
@@ -109,7 +112,6 @@ int CNFThread::ModFDToEpoll(int fd, void *p, int flag)
         assert(0);
         return CODE_FAILED;
     }
-
 
     MYLOG_DEBUG(CNFMain::g_pLogger, "epoll mod event: flag:%x fd:%d count:%d p:%p.", flag, fd, m_FDCount, p);
 
@@ -180,8 +182,6 @@ int CNFThread::DelFDFromEpoll(int fd)
 
 void CNFThread::Run()
 {
-    char buf[100];
-
     if(OnThreadStarted() != 0) {
         exit(0);
     }
@@ -189,6 +189,8 @@ void CNFThread::Run()
     if(m_ListenD.fd >= 0) {
         AddFDToEpoll(m_ListenD.fd, &m_ListenD, 0);
     }
+
+    char buf[100] = {0};
 
     while(CNFMain::bKeepRunning) {
         UINT32 wait_milisec = m_Timers.GetNearestTimeOut(NF_DEFAULT_WAIT_SECONDS);
@@ -203,11 +205,11 @@ void CNFThread::Run()
                 MYLOG_DEBUG(CNFMain::g_pLogger, "epoll_wait() EINTRed wait_milisec:%u.", wait_milisec);
                 continue;
             }
-            MYLOG_DEBUG(CNFMain::g_pLogger, "epoll_wait() failed,errno:%d wait_milisec:%u.", errno, wait_milisec);
+            MYLOG_WARN(CNFMain::g_pLogger, "epoll_wait() failed,errno:%d wait_milisec:%u.", errno, wait_milisec);
             return;
         }
 
-        MYLOG_DEBUG(CNFMain::g_pLogger, "epoll_wait() return events:%d wait_milisec:%u.", events, wait_milisec);
+        // MYLOG_DEBUG(CNFMain::g_pLogger, "epoll_wait() return events:%d wait_milisec:%u.", events, wait_milisec);
         if (events == 0) {
             m_Timers.CheckTimeOuts();
             continue;
@@ -225,7 +227,6 @@ void CNFThread::Run()
 
             if (revents & EPOLLIN) {
                 if(((NF_EPDATA_HEAD *)(event_list[i].data.ptr))->fd == m_R.fd) {
-                    // 本地消息
                     int recvLen = read(m_R.fd, buf, sizeof(buf));
                     while(recvLen > 0) {
                         recvLen = read(m_R.fd, buf, sizeof(buf));
@@ -233,7 +234,6 @@ void CNFThread::Run()
                     assert(recvLen != 0);
                     CNFThread::DealMsgs();
                 } else if (((NF_EPDATA_HEAD *)(event_list[i].data.ptr))->fd == m_ListenD.fd){
-                    // 负载均衡，只有句柄数少的才accept
                     if(bCheckCanAccept) {
                         if(! m_pApp->CheckCanAccept(GetID(), m_FDCount)) {
                             bCheckCanAccept = false;
@@ -252,7 +252,7 @@ void CNFThread::Run()
                             MYLOG_WARN(CNFMain::g_pLogger, "accept error,fd:%d count:%d errno:%d.", ((NF_EPDATA_HEAD *)(event_list[i].data.ptr))->fd, m_FDCount, errno);
                         }
                     } else {
-                        MYLOG_DEBUG(CNFMain::g_pLogger, "accept connection from %s:%d fd:%d listenfd:%d count:%d.", inet_ntoa(*(in_addr *)&client_addr.sin_addr.s_addr), ntohs(client_addr.sin_port), client_sd,m_ListenD.fd, m_FDCount);
+                        // MYLOG_DEBUG(CNFMain::g_pLogger, "accept connection from %s:%d fd:%d listenfd:%d count:%d.", inet_ntoa(*(in_addr *)&client_addr.sin_addr.s_addr), ntohs(client_addr.sin_port), client_sd,m_ListenD.fd, m_FDCount);
                         SetAcceptSocketOpts(client_sd);
                         NF_EPDATA_HEAD * pHead = AllocateConnection(client_sd);
                         AddFDToEpoll(client_sd, pHead, 0);

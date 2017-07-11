@@ -25,7 +25,7 @@ int CNFMain::Init()
         g_pLogger=log4cxx::Logger::getRootLogger();
     }
 
-    //Mask PIPE
+    // https://stackoverflow.com/questions/23889062/c-how-to-handle-sigpipe-in-a-multithreaded-environment
     sigset_t signals;
     sigemptyset(&signals);
     sigaddset(&signals, SIGPIPE);
@@ -96,7 +96,7 @@ int CNFMain::AddThread(CNFThread *pThr, const char *pName, int flag, UINT32 time
 }
 
 
-int CNFMain::ListenIPPort(std::string strIP, UINT16 usPort, int backlog)
+int CNFMain::ListenIPPort(const std::string & strIP, UINT16 usPort, int backlog)
 {
     int listenfd;
     if((listenfd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
@@ -156,13 +156,13 @@ int CNFMain::ListenIPPort(std::string strIP, UINT16 usPort, int backlog)
 }
 
 
-void CNFMain::Run(std::string strIP, UINT16 usPort, UINT32 fd_count, int backlog)
+void CNFMain::Run(const std::string & strIP, UINT16 usPort, UINT32 fd_count, int backlog)
 {
     int ret;
     int listenfd = -1;
     Init();
 
-    // Server
+    // 如果提供strIP参数，则作为Server
     if(strIP.size() > 0) {
         listenfd = ListenIPPort(strIP, usPort, backlog);
         if(listenfd < 0) {
@@ -170,7 +170,6 @@ void CNFMain::Run(std::string strIP, UINT16 usPort, UINT32 fd_count, int backlog
         }
     }
 
-    // Client
     std::vector<CNFThread *>::iterator iter;
     for (iter = m_Threads.begin(); iter != m_Threads.end(); iter++) {
         ret = (*iter)->InitizlizeThread(fd_count);
@@ -189,4 +188,3 @@ void CNFMain::Run(std::string strIP, UINT16 usPort, UINT32 fd_count, int backlog
         (*iter)->Exit();
     }
 }
-

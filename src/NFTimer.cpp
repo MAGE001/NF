@@ -25,7 +25,7 @@ CNFTimer::~CNFTimer()
 int CNFTimer::InitializeLists(UINT32 unit_count)
 {
     struct timezone tz;
-    if(gettimeofday(&m_tNow,&tz) != 0) {
+    if(gettimeofday(&m_tNow, &tz) != 0) {
         return CODE_ERROR_SYSCALL;
     }
     if(unit_count < 2) {
@@ -37,7 +37,6 @@ int CNFTimer::InitializeLists(UINT32 unit_count)
     if(NULL == m_TimeOuts) {
         return CODE_NEW_FAILED;
     }
-
 
     m_FreeIdx[0] = 0;
     m_FreeIdx[1] = m_UnitCount - 1;
