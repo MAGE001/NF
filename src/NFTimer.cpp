@@ -44,10 +44,10 @@ int CNFTimer::InitializeLists(UINT32 unit_count)
 
     UINT32 i;
     for(i = 1; i < m_UnitCount -1; ++i) {
-        m_TimeOuts[i].Init(i-1, i + 1, i);
+        m_TimeOuts[i].Init(i-1, i+1, i);
     }
 
-    m_TimeOuts[m_UnitCount - 1].Init(m_UnitCount - 2, INVALID_UNIT_IDX,m_UnitCount - 1);
+    m_TimeOuts[m_UnitCount - 1].Init(m_UnitCount - 2, INVALID_UNIT_IDX, m_UnitCount - 1);
 
     for(i = 0; i < TIMER_LIST_SPLITS; ++i) {
         m_TLists[i][0] = INVALID_UNIT_IDX;
@@ -66,8 +66,8 @@ int CNFTimer::CheckTimeOuts()
     }
 
     UINT32 from, to, cir;
-    from = m_tLast.tv_sec%TIMER_LIST_SPLITS;
-    to = m_tNow.tv_sec%TIMER_LIST_SPLITS;
+    from = m_tLast.tv_sec % TIMER_LIST_SPLITS;
+    to = m_tNow.tv_sec % TIMER_LIST_SPLITS;
 
     //如果跨越多个时间片
     if(to >= from) {
@@ -130,7 +130,7 @@ UINT32 CNFTimer::GetTimeUnit()
 
 void CNFTimer::RemoveListUnit(UINT32 listidx, UINT32 timeidx)
 {
-    if(m_TimeOuts[timeidx].curlst  != listidx) {
+    if(m_TimeOuts[timeidx].curlst != listidx) {
         assert(0);
     }
 
@@ -160,8 +160,8 @@ void CNFTimer::RemoveListUnit(UINT32 listidx, UINT32 timeidx)
 void CNFTimer::InsertListUnit(UINT32 listidx, UINT32 timeidx)
 {
     //加到尾部
-    m_TimeOuts[timeidx].previdx= m_TLists[listidx][1];
-    m_TimeOuts[timeidx].nextidx= INVALID_UNIT_IDX;
+    m_TimeOuts[timeidx].previdx = m_TLists[listidx][1];
+    m_TimeOuts[timeidx].nextidx = INVALID_UNIT_IDX;
     m_TimeOuts[timeidx].curlst = listidx;
 
     //如果队列为空
@@ -172,23 +172,22 @@ void CNFTimer::InsertListUnit(UINT32 listidx, UINT32 timeidx)
         m_TimeOuts[m_TLists[listidx][1]].nextidx = timeidx;
         m_TLists[listidx][1] = timeidx;
     }
-
 }
 
 UINT32 CNFTimer::GetNearestTimeOut(UINT32 in_seconds)
 {
     UINT32 from, to, cir, diff;
     UINT32 iH = INVALID_UNIT_IDX;
-    from = m_tNow.tv_sec%TIMER_LIST_SPLITS;
-    to = (from + in_seconds) %TIMER_LIST_SPLITS;
+    from = m_tNow.tv_sec % TIMER_LIST_SPLITS;
+    to = (from + in_seconds) % TIMER_LIST_SPLITS;
 
     if(to >= from) {
-        for(cir = from; cir<= to; ++cir) {
+        for(cir = from; cir <= to; ++cir) {
             iH = m_TLists[cir][0];
             if(iH == INVALID_UNIT_IDX) {
                 continue;
             }
-            diff =  (cir-from) *1000;
+            diff = (cir-from) * 1000;
             break;
         }
     } else {
@@ -197,7 +196,7 @@ UINT32 CNFTimer::GetNearestTimeOut(UINT32 in_seconds)
             if(iH == INVALID_UNIT_IDX) {
                 continue;
             }
-            diff =  (cir-from) *1000;
+            diff = (cir-from) * 1000;
             break;
         }
         if(iH == INVALID_UNIT_IDX) {
@@ -206,7 +205,7 @@ UINT32 CNFTimer::GetNearestTimeOut(UINT32 in_seconds)
                 if(iH == INVALID_UNIT_IDX) {
                     continue;
                 }
-                diff =  cir *1000;
+                diff = cir * 1000;
                 break;
             }
         }
@@ -237,7 +236,7 @@ UINT32 CNFTimer::SetTimer(UINT32 timerid, UINT32 par1, void *par2, CNFThread *ph
         return idx;
     }
 
-    if(m_TimeOuts[idx].SetTimer(timerid, par1, par2, ph, timeout,tag, m_tNow) != CODE_OK) {
+    if(m_TimeOuts[idx].SetTimer(timerid, par1, par2, ph, timeout, tag, m_tNow) != CODE_OK) {
         FreeTimeUnit(idx);
         return INVALID_UNIT_IDX;
     }
@@ -260,10 +259,10 @@ void CNFTimer::KillTimer(UINT32 tid)
     DelListUnit(m_TimeOuts[tid].curlst, tid);
 }
 
-void CNFTimer::DoTimeOut(UINT32 Idx,UINT32 listidx)
+void CNFTimer::DoTimeOut(UINT32 Idx, UINT32 listidx)
 {
     m_TimeOuts[Idx].phandler->OnTimer(m_TimeOuts[Idx].timerid, m_TimeOuts[Idx].parm1, m_TimeOuts[Idx].parm2);
-    if(! m_TimeOuts[Idx].tag) {
+    if(!m_TimeOuts[Idx].tag) {
         DelListUnit(listidx, Idx);
     } else {
         m_TimeOuts[Idx].SetNextTimeOut(m_tNow);

@@ -51,7 +51,6 @@ struct NF_TIME_UNIT
     int SetTimer(UINT32 tid, UINT32 par1, void *par2,
                  CNFThread *ph, unsigned long tout, char bperm, const timeval &tNow)
     {
-        /*in miliseconds*/
         if(tout > NF_MAX_TIMEOUT) {
             return CODE_ERROR_PARAM;
         }
@@ -89,7 +88,7 @@ struct NF_TIME_UNIT
 class CNFTimer
 {
  private:
-    NF_TIME_UNIT  *m_TimeOuts;
+    NF_TIME_UNIT *m_TimeOuts;
     UINT32 m_UnitCount;
     UINT32 m_FreeIdx[2];  // [0] is head, [1] is tail
 

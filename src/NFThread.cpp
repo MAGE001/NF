@@ -198,9 +198,11 @@ void CNFThread::Run()
             wait_milisec = NF_DEFAULT_WAIT_SECONDS*1000;
         }
 
+        // 这里要检查Timer，不能一直block
         int events;
         events = epoll_wait(m_EP, &event_list[0], m_FDCount, wait_milisec);
         if (events == -1) {
+            // the call is interrupted by a signal handler
             if(errno == EINTR) {
                 MYLOG_DEBUG(CNFMain::g_pLogger, "epoll_wait() EINTRed wait_milisec:%u.", wait_milisec);
                 continue;
@@ -209,7 +211,7 @@ void CNFThread::Run()
             return;
         }
 
-        // MYLOG_DEBUG(CNFMain::g_pLogger, "epoll_wait() return events:%d wait_milisec:%u.", events, wait_milisec);
+        // the timeout expires
         if (events == 0) {
             m_Timers.CheckTimeOuts();
             continue;
